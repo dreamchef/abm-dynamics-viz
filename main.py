@@ -1,16 +1,27 @@
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
-import random
+from random import random as rand
 
 map = []
 
+class World:
+    def __init__(self,population=1,mapSize=400,):
+        
+        self.agents = []
+        
+        for i in range(population):
+            self.agents.append(Agent(position=[rand()*mapSize/10 - mapSize/20, rand()*mapSize/10 - mapSize/20],
+                                     velocity=[rand()*mapSize/10 - mapSize/20, rand()*mapSize/10 - mapSize/20]))
+
+        self.mapSize = mapSize
+
+
 class Agent:
-    def __init__(self, position, velocity, speed=0.1, empathy=1, xenophobia=1, vision=200, 
+    def __init__(self, position, velocity, empathy=1, xenophobia=1, vision=200, 
                  dPosition=0, dSpeed=0, dEmpathy=0, dXenophobia=0, dVision=0,
                 species=0, age=0, ):
         self.velocity = np.array(velocity)
-        self.speed = speed
         self.empathy = empathy
         self.xenophobia = xenophobia
         self.vision = vision
@@ -18,7 +29,6 @@ class Agent:
         self.species = species
         self.position = np.array(position)
         self.dPosition = dPosition
-        self.dSpeed = dSpeed
         self.dEmpathy = dEmpathy
         self.dXenophobia = dXenophobia
         self.dVision = dVision
@@ -40,7 +50,7 @@ class Agent:
 
         print(herd_velocity)
 
-        self.velocity += (herd_velocity * self.speed / np.linalg.norm(herd_velocity) ) * 
+        self.velocity += ((herd_velocity/np.linalg.norm(herd_velocity))-(self.velocity/np.linalg.norm(self.velocity)))
     
 
     def updateEmpathy(self):
