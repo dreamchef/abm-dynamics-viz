@@ -6,18 +6,28 @@ from random import random as rand
 map = []
 
 class World:
+
     def __init__(self,population=1,mapSize=400,):
         
         self.agents = []
+        self.figure, self.ax = plt.subplots()
+        self.ax.set_xlim(-100, 100)
+        self.ax.set_ylim(-100, 100)
         
         for i in range(population):
-            self.agents.append(Agent(position=[rand()*mapSize/10 - mapSize/20, rand()*mapSize/10 - mapSize/20],
-                                     velocity=[rand()*mapSize/10 - mapSize/20, rand()*mapSize/10 - mapSize/20]))
+
+            newAgent = Agent(position=[rand()*mapSize/10 - mapSize/20, rand()*mapSize/10 - mapSize/20],
+                                     velocity=[rand()*mapSize/10 - mapSize/20, rand()*mapSize/10 - mapSize/20])
+
+            self.agents.append(newAgent)
+            self.ax.add_patch(newAgent.pltObj)
 
         self.mapSize = mapSize
 
 
+
 class Agent:
+
     def __init__(self, position, velocity, empathy=1, xenophobia=1, vision=200, 
                  dPosition=0, dSpeed=0, dEmpathy=0, dXenophobia=0, dVision=0,
                 species=0, age=0, ):
@@ -32,6 +42,7 @@ class Agent:
         self.dEmpathy = dEmpathy
         self.dXenophobia = dXenophobia
         self.dVision = dVision
+        self.pltObj = plt.Circle(self.position, 2, color=np.random.rand(3,))
         
     
     def updatePosition(self):
@@ -66,14 +77,12 @@ class Agent:
 [map.append(Agent([random.random()*200 - 100, random.random()*200 - 100], [random.random()*2 - 1, random.random()*2 - 1])) for i in range(5)]
 
 # Set up the figure and axis for animation
-fig, ax = plt.subplots()
-ax.set_xlim(-100, 100)
-ax.set_ylim(-100, 100)
+
 
 agentMarkers = []
 
 [agentMarkers.append(plt.Circle(map[i].position, 2, color=np.random.rand(3,))) for i in range(5)]
-[ax.add_patch(agentMarkers[i]) for i in range(5)]
+[ for i in range(5)]
 
 print(agentMarkers)
 
