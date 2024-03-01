@@ -2,66 +2,160 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
 from random import random as rand
+import matplotlib.colors as mcolors
 
-map = []
+
+def HSVToRGB(HSV):
+
+    [h, s, v] = HSV
+
+    if s == 0.0:
+        return v, v, v
+    i = int(h*6.)  # Assume H is given as a value between 0 and 1.
+    f = (h*6.)-i
+    p, q, t = v*(1.-s), v*(1.-s*f), v*(1.-s*(1.-f))
+    i %= 6
+    if i == 0:
+        return v, t, p
+    if i == 1:
+        return q, v, p
+    if i == 2:
+        return p, v, t
+    if i == 3:
+        return p, q, v
+    if i == 4:
+        return t, p, v
+    if i == 5:
+        return v, p, q
 
 class World:
 
-    def __init__(self,population=1,mapSize=400,):
+    def __init__(self,population=1,spawnSize=400,worldSize=1200,worldInterval=1000):
         
         self.agents = []
-        self.figure, self.ax = plt.subplots()
-        self.ax.set_xlim(-100, 100)
-        self.ax.set_ylim(-100, 100)
+        self.figure, self.ax = plt.subplots(figsize=(18,10))
+        self.ax.set_xlim(-worldSize/2, worldSize/2)
+        self.ax.set_ylim(-worldSize/2, worldSize/2)
+
+        self.worldInterval = worldInterval
+        self.worldSize = worldSize
         
         for i in range(population):
 
-            newAgent = Agent(position=[rand()*mapSize/10 - mapSize/20, rand()*mapSize/10 - mapSize/20],
-                                     velocity=[rand()*mapSize/10 - mapSize/20, rand()*mapSize/10 - mapSize/20])
+            print(i)
+
+            newAgent = Agent(index=i, position=[rand()*spawnSize - spawnSize/2, rand()*spawnSize - spawnSize/2],
+                                     velocity=[rand()*spawnSize/10 - spawnSize/20, rand()*spawnSize/10 - spawnSize/20])
 
             self.agents.append(newAgent)
             self.ax.add_patch(newAgent.pltObj)
 
-        self.mapSize = mapSize
+            print('Created agent at',newAgent.position,'with index',newAgent.index)
+
+        self.spawnSize = spawnSize
+
+
+    def updateWorld(self,x=0):
+
+        pltObjects = []
+
+        for agent in self.agents:
+
+            agent.updatePosition(self.agents, self.worldSize)
+            agent.pltObj.center = agent.position
+            pltObjects.append(agent.pltObj)
+           
+            velocityArrow = plt.Arrow(agent.position[0], agent.position[1], agent.velocity[0], agent.velocity[1], width=2, color=agent.color)
+
+            self.ax.add_patch(velocityArrow)
+
+            pltObjects.append(velocityArrow)
+
+        return pltObjects
+
+
+    def start(self):
+
+        ani = animation.FuncAnimation(self.figure, self.updateWorld, frames=100, interval=self.worldInterval, blit=True)
+
+        plt.show()
+
 
 
 
 class Agent:
 
-    def __init__(self, position, velocity, empathy=1, xenophobia=1, vision=200, 
-                 dPosition=0, dSpeed=0, dEmpathy=0, dXenophobia=0, dVision=0,
-                species=0, age=0, ):
+    def __init__(self, index, position, velocity, empathy=1, xenophobia=1, vision=1200, 
+                 dPosition=0, dSpeed=0, dEmpathy=0, dXenophobia=0, dVision=0, age=0, ):
+        
+        self.index = index
         self.velocity = np.array(velocity)
         self.empathy = empathy
         self.xenophobia = xenophobia
         self.vision = vision
         self.empathy = empathy
-        self.species = species
+        self.species = rand()
         self.position = np.array(position)
         self.dPosition = dPosition
         self.dEmpathy = dEmpathy
         self.dXenophobia = dXenophobia
         self.dVision = dVision
-        self.pltObj = plt.Circle(self.position, 2, color=np.random.rand(3,))
+        self.color = HSVToRGB([self.species,1,1])
+
+        self.pltObj = plt.Circle(self.position, 5, color=self.color)
         
     
-    def updatePosition(self):
+    def updatePosition(self, agents, worldSize):
 
-        self.updateVelocity()
+        self.updateVelocity(agents)
 
         self.position += self.velocity
 
-    def updateVelocity(self):
+        if self.position[0] < -worldSize/2:
+            self.position[0] += worldSize
 
+        elif self.position[0] > worldSize/2:
+            self.position[0] -= worldSize
+
+
+        if self.position[1] < -worldSize/2:
+            self.position[1] += worldSize
+
+        elif self.position[1] > worldSize/2:
+            self.position[1] -= worldSize
+
+        # Update visualization objects
+        self.pltObj.center = self.position
+        
+
+
+    def updateVelocity(self, agents):
+
+        herd_velocity = self.herdVelocity(agents)
+
+        herd_magnitude = np.linalg.norm(herd_velocity)
+        self_magnitude = np.linalg.norm(self.velocity)
+
+        if herd_magnitude > 0.1:
+            
+            herd_unit_velocity = herd_velocity/herd_magnitude
+
+            self.velocity += herd_unit_velocity
+
+    def herdVelocity(self, agents, distFactor=100):
+        
         herd_velocity = np.zeros(2)
 
-        for neighbor in map:
-            if np.linalg.norm(neighbor.position - self.position) < self.vision:
-                herd_velocity += neighbor.velocity*self.empathy
+        for neighbor in agents:
 
-        print(herd_velocity)
+            if neighbor.index is not self.index:
 
-        self.velocity += ((herd_velocity/np.linalg.norm(herd_velocity))-(self.velocity/np.linalg.norm(self.velocity)))
+                distance = np.linalg.norm(neighbor.position - self.position)
+
+                if distance < self.vision and distance > 0.1:
+                    herd_velocity += neighbor.velocity * (1-np.sqrt(abs(self.species-neighbor.species)))  #*distFactor/distance
+
+        return herd_velocity
     
 
     def updateEmpathy(self):
@@ -72,31 +166,12 @@ class Agent:
 
     def updateVision(self):
         return 0
-  
-# add two agents to the map
-[map.append(Agent([random.random()*200 - 100, random.random()*200 - 100], [random.random()*2 - 1, random.random()*2 - 1])) for i in range(5)]
-
-# Set up the figure and axis for animation
 
 
-agentMarkers = []
+print('SETUP')
 
-[agentMarkers.append(plt.Circle(map[i].position, 2, color=np.random.rand(3,))) for i in range(5)]
-[ for i in range(5)]
+world = World(10)
 
-print(agentMarkers)
+print('\n\nSIMULATION')
 
-def update(frame):
-    
-    [agent.updatePosition() for agent in map]
-    for i in range(5):
-        agentMarkers[i].center = map[i].position 
-
-    #print(map[0].velocity)
-
-    return agentMarkers
-
-# Create animation
-ani = animation.FuncAnimation(fig, update, frames=100, interval=100, blit=True)
-
-plt.show()
+world.start()
