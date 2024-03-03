@@ -28,24 +28,29 @@ def HSVToRGB(HSV):
     if i == 5:
         return v, p, q
 
+
+
+
 class World:
 
-    def __init__(self,population=1,spawnSize=400,worldSize=1200,worldInterval=1000):
+    def __init__(self,population=1,spawnSize=400,worldSize=1200,worldInterval=100,arrows=True,agentSize=3):
         
         self.agents = []
-        self.figure, self.ax = plt.subplots(figsize=(18,10))
+        self.figure, self.ax = plt.subplots(figsize=(12,8))
         self.ax.set_xlim(-worldSize/2, worldSize/2)
         self.ax.set_ylim(-worldSize/2, worldSize/2)
 
         self.worldInterval = worldInterval
         self.worldSize = worldSize
-        
+        self.arrows = arrows
+        self.agentSize = agentSize
+
         for i in range(population):
 
             print(i)
 
             newAgent = Agent(index=i, position=[rand()*spawnSize - spawnSize/2, rand()*spawnSize - spawnSize/2],
-                                     velocity=[rand()*spawnSize/10 - spawnSize/20, rand()*spawnSize/10 - spawnSize/20])
+                                     velocity=[rand()*spawnSize/10 - spawnSize/20, rand()*spawnSize/10 - spawnSize/20], plotSize = self.agentSize)
 
             self.agents.append(newAgent)
             self.ax.add_patch(newAgent.pltObj)
@@ -59,24 +64,28 @@ class World:
 
         pltObjects = []
 
+        arrowSize = 3
+
         for agent in self.agents:
 
             agent.updatePosition(self.agents, self.worldSize)
             agent.pltObj.center = agent.position
             pltObjects.append(agent.pltObj)
+
+            if self.arrows is True:
            
-            velocityArrow = plt.Arrow(agent.position[0], agent.position[1], agent.velocity[0], agent.velocity[1], width=2, color=agent.color)
+                velocityArrow = plt.Arrow(agent.position[0], agent.position[1], agent.velocity[0]*arrowSize, agent.velocity[1]*arrowSize, width=arrowSize*10, color=agent.color)
 
-            self.ax.add_patch(velocityArrow)
+                self.ax.add_patch(velocityArrow)
 
-            pltObjects.append(velocityArrow)
+                pltObjects.append(velocityArrow)
 
         return pltObjects
 
 
     def start(self):
 
-        ani = animation.FuncAnimation(self.figure, self.updateWorld, frames=100, interval=self.worldInterval, blit=True)
+        ani = animation.FuncAnimation(self.figure, self.updateWorld, frames=1000, interval=self.worldInterval, blit=True)
 
         plt.show()
 
@@ -85,8 +94,8 @@ class World:
 
 class Agent:
 
-    def __init__(self, index, position, velocity, empathy=1, xenophobia=1, vision=1200, 
-                 dPosition=0, dSpeed=0, dEmpathy=0, dXenophobia=0, dVision=0, age=0, ):
+    def __init__(self, index, position, velocity, empathy=1, xenophobia=1, vision=200, 
+                 dPosition=0, dSpeed=0, dEmpathy=0, dXenophobia=0, dVision=0, age=0, plotSize=20):
         
         self.index = index
         self.velocity = np.array(velocity)
@@ -101,8 +110,9 @@ class Agent:
         self.dXenophobia = dXenophobia
         self.dVision = dVision
         self.color = HSVToRGB([self.species,1,1])
+        self.plotSize=plotSize
 
-        self.pltObj = plt.Circle(self.position, 5, color=self.color)
+        self.pltObj = plt.Circle(self.position, self.plotSize, color=self.color)
         
     
     def updatePosition(self, agents, worldSize):
@@ -138,9 +148,9 @@ class Agent:
 
         if herd_magnitude > 0.1:
             
-            herd_unit_velocity = herd_velocity/herd_magnitude
+            herd_unit_velocity = herd_velocity
 
-            self.velocity += herd_unit_velocity
+            self.velocity = np.linalg.norm(self.velocity)*(self.velocity + herd_unit_velocity)/np.linalg.norm(self.velocity + herd_unit_velocity)
 
     def herdVelocity(self, agents, distFactor=100):
         
@@ -153,7 +163,7 @@ class Agent:
                 distance = np.linalg.norm(neighbor.position - self.position)
 
                 if distance < self.vision and distance > 0.1:
-                    herd_velocity += neighbor.velocity * (1-np.sqrt(abs(self.species-neighbor.species)))  #*distFactor/distance
+                    herd_velocity += neighbor.velocity * (0.5-np.sqrt(abs(self.species-neighbor.species)))  #*distFactor/distance
 
         return herd_velocity
     
@@ -168,9 +178,11 @@ class Agent:
         return 0
 
 
+
+
 print('SETUP')
 
-world = World(10)
+world = World(population=100,agentSize=10)
 
 print('\n\nSIMULATION')
 
