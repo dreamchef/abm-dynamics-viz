@@ -33,7 +33,7 @@ def HSVToRGB(HSV):
 
 class World:
 
-    def __init__(self,population=1,spawnSize=400,worldSize=1200,worldInterval=100,arrows=True,agentSize=3):
+    def __init__(self,population=1,spawnSize=400,worldSize=1200,worldInterval=50,arrows=True,agentSize=3):
         
         self.agents = []
         self.figure, self.ax = plt.subplots(figsize=(12,8))
@@ -163,7 +163,7 @@ class Agent:
                 distance = np.linalg.norm(neighbor.position - self.position)
 
                 if distance < self.vision and distance > 0.1:
-                    herd_velocity += neighbor.velocity * (0.5-np.sqrt(abs(self.species-neighbor.species)))  #*distFactor/distance
+                    herd_velocity += neighbor.velocity * (0.5-abs(self.species-neighbor.species))  #*distFactor/distance
 
         return herd_velocity
     
