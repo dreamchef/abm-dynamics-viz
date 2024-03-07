@@ -3,96 +3,7 @@ import matplotlib.animation as animation
 import numpy as np
 from random import random as rand
 import matplotlib.colors as mcolors
-
-
-
-
-def HSVToRGB(HSV):
-
-    [h, s, v] = HSV
-
-    if s == 0.0:
-        return v, v, v
-    i = int(h*6.)  # Assume H is given as a value between 0 and 1.
-    f = (h*6.)-i
-    p, q, t = v*(1.-s), v*(1.-s*f), v*(1.-s*(1.-f))
-    i %= 6
-    if i == 0:
-        return v, t, p
-    if i == 1:
-        return q, v, p
-    if i == 2:
-        return p, v, t
-    if i == 3:
-        return p, q, v
-    if i == 4:
-        return t, p, v
-    if i == 5:
-        return v, p, q
-
-
-
-
-class World:
-
-    def __init__(self,population=1,spawnSize=400,worldSize=1200,worldInterval=50,arrows=True,agentSize=3):
-        
-        self.agents = []
-        self.figure, self.ax = plt.subplots(figsize=(12,8))
-        self.ax.set_xlim(-worldSize/2, worldSize/2)
-        self.ax.set_ylim(-worldSize/2, worldSize/2)
-
-        self.worldInterval = worldInterval
-        self.worldSize = worldSize
-        self.arrows = arrows
-        self.agentSize = agentSize
-
-        for i in range(population):
-
-            print(i)
-
-            newAgent = Agent(index=i, position=[rand()*spawnSize - spawnSize/2, rand()*spawnSize - spawnSize/2],
-                                     velocity=[rand()*spawnSize/10 - spawnSize/20, rand()*spawnSize/10 - spawnSize/20], plotSize = self.agentSize)
-
-            self.agents.append(newAgent)
-            self.ax.add_patch(newAgent.pltObj)
-
-            print('Created agent at',newAgent.position,'with index',newAgent.index)
-
-        self.spawnSize = spawnSize
-
-
-    def updateWorld(self,x=0):
-
-        pltObjects = []
-
-        arrowSize = 3
-
-        for agent in self.agents:
-
-            agent.updatePosition(self.agents, self.worldSize)
-            agent.pltObj.center = agent.position
-            pltObjects.append(agent.pltObj)
-
-            if self.arrows is True:
-           
-                velocityArrow = plt.Arrow(agent.position[0], agent.position[1], agent.velocity[0]*arrowSize, agent.velocity[1]*arrowSize, width=arrowSize*10, color=agent.color)
-
-                self.ax.add_patch(velocityArrow)
-
-                pltObjects.append(velocityArrow)
-
-        return pltObjects
-
-
-    def start(self):
-
-        ani = animation.FuncAnimation(self.figure, self.updateWorld, frames=1000, interval=self.worldInterval, blit=True)
-
-        plt.show()
-
-
-
+from utils import HSVToRGB
 
 class Agent:
 
@@ -178,14 +89,3 @@ class Agent:
 
     def updateVision(self):
         return 0
-
-
-
-
-print('SETUP')
-
-world = World(population=100,agentSize=10)
-
-print('\n\nSIMULATION')
-
-world.start()
