@@ -10,6 +10,8 @@ CULL = 2
 GRACE = 1 # avoid local minima?
 EPISODES = 4
 
+P_B = [0,2,4]
+
 def get_all_keys(d, parent_keys=None):
     keys_list = []
     if parent_keys is None:
@@ -51,7 +53,7 @@ def modify_key_at_path(d, key_path, new_key):
 # where form_i is a function in terms of the observation space. If engine_i >= 0, it is on, else it is off (action potential).
 # And form_1-4 are stored in the tree.
 
-env = gymnasium.make('LunarLander-v2', render_mode='human')
+env = gymnasium.make('LunarLander-v2') #, render_mode='human')
 
 
 def modify_key(d, key_path, new_key, current_level=0):
@@ -66,30 +68,78 @@ def modify_key(d, key_path, new_key, current_level=0):
         modify_key(d[key_path[current_level]], key_path, new_key, current_level + 1)
 
 
-def policy_to_action(policy,obs):
+import math
 
-    # print('yyy')
-    #print(obs)
-    # print('xxx')
+def policy_compute(tree, values):
 
-    x = obs[0]
-    y = obs[1]
-    dx = obs[2]
-    dy = obs[3]
-    angle = obs[4]
-    dangle = obs[5]
-    L = obs[6]
-    R = obs[7]
+    values =    {'x': values[0],
+                'y': values[1],
+                'dx': values[2],
+                'dy': values[3],
+                'angle': values[4],
+                'dangle': values[5],
+                'L': values[6],
+                'R': values[7]
+                }
+    
+    #print(values,tree in OPNDS)
 
-    print(x,y)
+    # Base case: the tree is an operand
+    if list(tree)[0] in OPNDS:
+        return values.get(list(tree)[0], 0)  # Return the value or 0 if not found
 
-    L,R = bool(L),bool(R)
+    for key in tree:
+        if key in BIN_OPS:  # Handle binary operations
+            left, right = list(tree[key].values())
+            left_val = policy_compute(left, values)
+            right_val = policy_compute(right, values)
+            
+            if key == 'add':
+                return left_val + right_val
+            elif key == 'mult':
+                return left_val * right_val
+            elif key == 'div':
+                return left_val / right_val
 
-    return 0
+        elif key in UN_OPS:  # Handle unary operations
+            operand = next(iter(tree[key]))  # Get the operand for the unary operation
+            operand_val = policy_compute(operand, values)
+            
+            if key == 'neg':
+                return -operand_val
+            elif key == 'abs':
+                return abs(operand_val)
+            elif key == 'exp':
+                return math.exp(operand_val)
+            elif key == 'log':
+                return math.log(operand_val)
+            elif key == 'sq':
+                return operand_val ** 2
+            elif key == 'sqrt':
+                return math.sqrt(operand_val)
+            elif key == 'cb':
+                return operand_val ** 3
+            elif key == 'sin':
+                return math.sin(operand_val)
+            elif key == 'cos':
+                return math.cos(operand_val)
+            
+def potential_to_action(potential):
+
+    if potential >= P_B[2]:
+        return 3
+    elif potential >= P_B[1]:
+        return 2
+    elif potential >= P_B[0]:
+        return 1
+    else:
+        return 0
 
 def score_policy(policy):
     observation = env.reset()[0]  # Reset the environment to start a new episode
     total_reward = 0
+
+    sample = 0
 
     for episode in range(EPISODES):
 
@@ -101,7 +151,16 @@ def score_policy(policy):
 
             #print('observation:',list(observation))
 
-            action = policy_to_action(policy, list(observation))
+            potential = policy_compute(policy['AP'], list(observation))
+
+            action = potential_to_action(potential)
+
+            sample += 1
+
+            if sample % 100 == 0:
+                print('observation',observation)
+                print('potential',potential)
+                print('action',action)
 
             # Step the environment by applying the action
             observation, reward, done, info = env.step(action)[:4]
@@ -109,6 +168,10 @@ def score_policy(policy):
             #print(observation, reward, done, info)
 
             total_reward += reward
+
+            
+
+            
 
             if done:  # If the episode is finished
                 break
@@ -118,7 +181,7 @@ def score_policy(policy):
 
 
 BIN_OPS = ['mult','div','add']
-UN_OPS = ['neg','abs','exp','log','sq','sqrt','cb','sin','cos','d/dt','d2/dt2']
+UN_OPS = ['neg','abs','exp','log','sq','sqrt','cb','sin','cos']
 OPNDS = ['x','y','dx','dy','angle','dangle','L','R']
 
 F = {'AP': {'x': '.'},
