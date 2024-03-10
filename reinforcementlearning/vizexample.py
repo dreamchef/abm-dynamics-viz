@@ -4,9 +4,9 @@ import copy
 
 import random
 
-GENS = 4
+GENS = 2
 REPL = 8
-CULL = 4
+CULL = 3
 EPISODES = 7
 
 P_B = [-0.7,0,0.6]
@@ -94,7 +94,7 @@ def policy_compute(policy, values):
         
 
     else:
-        print('ERROR')
+        #print('ERROR')
         return 0
             
 def potential_to_action(potential):
@@ -163,10 +163,10 @@ def score_policy(policy, ep=10, render=False):
 
             sample += 1
 
-            if sample % 10 == 0:
-                print('observation',observation)
-                print('potential',potential)
-                print('action',action)
+            # if sample % 10 == 0:
+            #     print('observation',observation)
+            #     print('potential',potential)
+            #     print('action',action)
 
             # Step the environment by applying the action
             observation, reward, done, info = env.step(action)[:4]
@@ -268,7 +268,7 @@ def mutants(policy, sample=1):
 
 
 
-env = gymnasium.make('LunarLander-v2')#, render_mode='human')
+env = gymnasium.make('LunarLander-v2', render_mode='human')
 
 BIN_OPS = ['mult','add','sub', 'div']
 UN_OPS = ['abs','exp','log','sqrt','sin','cos']
@@ -279,7 +279,7 @@ OPNDS = ['x','y','dx','dy','angle','dangle','L','R']
 F = {'AP': ['add', 
                 ['mult','x','y'],
                 ['mult','dx','dy']],
-        'score': 0 # placeholder
+        'score': 0
         }
 
 F['score'] = -200

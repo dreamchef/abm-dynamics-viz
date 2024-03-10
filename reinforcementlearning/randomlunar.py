@@ -1,5 +1,5 @@
 import gymnasium as gym
-env = gym.make("LunarLander-v2")
+env = gym.make("LunarLander-v2", render_mode='human')
 observation, info = env.reset(seed=42)
 
 
@@ -23,6 +23,8 @@ def toAction(potential):
 
 for _ in range(10):
 
+    env.reset()
+
     for _ in range(1000):
 
 
@@ -37,10 +39,10 @@ for _ in range(10):
 
         potential = (x * dy) + (dangle * dy)
 
-        action = toAction(potential)
+        #action = toAction(potential)
 
         
-        #env.action_space.sample()  # Replace this with your policy
+        action = env.action_space.sample()  # Replace this with your policy
         observation, reward, terminated, truncated, info = env.step(action)
 
         total_reward += reward
